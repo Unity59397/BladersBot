@@ -12,11 +12,10 @@ async function generateQuestion() {
     }
 
     try {
-        const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent([
-            "You create two short, engaging discussion prompts for a Discord community. Return them as two numbered lines in this exact format: 1. [General question] 2. [Beyblade-themed question]. Do not include any extra explanation.",
-            "Generate two thoughtful questions: one general, one Beyblade-themed."
-        ]);
+        const model = client.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const result = await model.generateContent(
+            "You create two short, engaging discussion prompts for a Discord community. Return them as two numbered lines in this exact format: 1. [General question] 2. [Beyblade-themed question]. Do not include any extra explanation. Generate two thoughtful questions: one general, one Beyblade-themed."
+        );
 
         const content = result.response?.text?.().trim();
 
