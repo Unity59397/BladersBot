@@ -1,9 +1,19 @@
 const { EmbedBuilder } = require("discord.js");
-const { getNextQuestion, recordQuestionUsage } = require("./database");
+const { getNextQuestion, recordQuestionUsage, saveQuestion } = require("./database");
+const { generateQuestion } = require("./openai");
+const logger = require("../utils/logger");
 const config = require("../config/config");
 
-function getQuestionForGuild(guildId) {
-    const question = getNextQuestion(guildId);
+async function getQuestionForGuild(guildId) {
+    let question = await generateQuestion();
+
+    if (!question) {
+        question = getNextQuestion(guildId);
+    }
+    else {
+        saveQuestion(guildId, question, "ai");
+        logger.info(`Generated AI question for ${guildId}: ${question}`);
+    }
 
     if (!question) {
         return null;

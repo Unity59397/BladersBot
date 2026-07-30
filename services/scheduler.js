@@ -101,7 +101,7 @@ async function postQotdToGuild(client, guildId) {
         return false;
     }
 
-    const question = getQuestionForGuild(guildId);
+    const question = await getQuestionForGuild(guildId);
 
     if (!question) {
         logger.warn(`No question available for ${guild.name}.`);
