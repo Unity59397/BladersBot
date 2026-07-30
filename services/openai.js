@@ -1,43 +1,33 @@
-const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const logger = require("../utils/logger");
 
-const client = process.env.OPENAI_API_KEY
-    ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const client = process.env.GEMINI_API_KEY
+    ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
     : null;
 
 async function generateQuestion() {
     if (!client) {
-        logger.warn("OPENAI_API_KEY is not configured; using fallback question generation.");
+        logger.warn("GEMINI_API_KEY is not configured; using fallback question generation.");
         return null;
     }
 
     try {
-        const response = await client.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are a helpful assistant that creates short, engaging daily discussion questions for a Discord community. Return only one concise question, no extra text."
-                },
-                {
-                    role: "user",
-                    content: "Generate one thoughtful question of the day for a friendly Discord community."
-                }
-            ],
-            temperature: 0.8,
-            max_tokens: 60
-        });
+        const model = client.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent([
+            "You create two short, engaging discussion prompts for a Discord community. Return them as two numbered lines in this exact format: 1. [General question] 2. [Beyblade-themed question]. Do not include any extra explanation.",
+            "Generate two thoughtful questions: one general, one Beyblade-themed."
+        ]);
 
-        const question = response.choices?.[0]?.message?.content?.trim();
+        const content = result.response?.text?.().trim();
 
-        if (!question) {
-            throw new Error("OpenAI returned no question content.");
+        if (!content) {
+            throw new Error("Gemini returned no question content.");
         }
 
-        return question;
+        return content;
     }
     catch (error) {
-        logger.error(`OpenAI question generation failed: ${error.message}`);
+        logger.error(`Gemini question generation failed: ${error.message}`);
         return null;
     }
 }

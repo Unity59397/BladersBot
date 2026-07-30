@@ -5,35 +5,44 @@ const logger = require("../utils/logger");
 const config = require("../config/config");
 
 async function getQuestionForGuild(guildId) {
-    let question = await generateQuestion();
+    let questionText = await generateQuestion();
 
-    if (!question) {
-        question = getNextQuestion(guildId);
+    if (!questionText) {
+        questionText = getNextQuestion(guildId);
     }
     else {
-        saveQuestion(guildId, question, "ai");
-        logger.info(`Generated AI question for ${guildId}: ${question}`);
+        saveQuestion(guildId, questionText, "ai");
+        logger.info(`Generated AI question set for ${guildId}: ${questionText}`);
     }
 
-    if (!question) {
+    if (!questionText) {
         return null;
     }
 
-    recordQuestionUsage(guildId, question);
-    return question;
+    recordQuestionUsage(guildId, questionText);
+    return questionText;
 }
 
 function buildQotdEmbed(question, guildName) {
+    const lines = String(question || "")
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    const description = lines.length > 0
+        ? lines.map((line) => `• ${line}`).join("\n")
+        : "No question available.";
+
     return new EmbedBuilder()
         .setColor(config.embedColor)
         .setTitle("✨ Question of the Day")
-        .setDescription(`**${question}**`)
+        .setDescription(description)
         .addFields({
             name: "💡 Prompt",
-            value: "Take a moment to reflect and share your answer in the thread or chat."
+            value: "Pick one, or answer both if you want to challenge yourself."
         })
         .setFooter({
-            text: `${config.botName} • Fresh question for ${guildName}`
+            text: `${config.botName} • Fresh questions for ${guildName}`
         })
         .setTimestamp();
 }
