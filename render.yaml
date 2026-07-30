@@ -18,5 +18,3 @@ services:
         value: 09:00
       - key: QOTD_TIMEZONE
         value: Europe/London
-      - key: DB_PATH
-        value: /var/data/database.sqlite

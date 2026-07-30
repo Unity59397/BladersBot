@@ -3,14 +3,35 @@ const path = require("path");
 const Database = require("better-sqlite3");
 const logger = require("../utils/logger");
 
-const dbPath = process.env.DB_PATH
-    ? path.resolve(process.env.DB_PATH)
-    : path.join(__dirname, "../database/database.sqlite");
+function resolveDatabasePath() {
+    const configuredPath = process.env.DB_PATH;
 
-const dbDirectory = path.dirname(dbPath);
-fs.mkdirSync(dbDirectory, { recursive: true });
+    if (configuredPath) {
+        return path.resolve(configuredPath);
+    }
 
-const db = new Database(dbPath);
+    return path.join(__dirname, "../database/database.sqlite");
+}
+
+function createDatabaseDirectory(dbPath) {
+    try {
+        fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+        return true;
+    }
+    catch (error) {
+        return false;
+    }
+}
+
+let dbPath = resolveDatabasePath();
+let db;
+
+if (!createDatabaseDirectory(dbPath)) {
+    dbPath = path.join(process.cwd(), "database", "database.sqlite");
+    createDatabaseDirectory(dbPath);
+}
+
+db = new Database(dbPath);
 
 db.pragma("journal_mode = WAL");
 

@@ -19,4 +19,4 @@
 - GUILD_ID (optional for global commands)
 - QOTD_POST_TIME (example: 09:00)
 - QOTD_TIMEZONE (example: Europe/London)
-- DB_PATH (example: /var/data/database.sqlite)
+- DB_PATH (optional; leave unset unless you want to override the storage location)
