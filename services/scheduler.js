@@ -109,19 +109,21 @@ async function postQotdToGuild(client, guildId) {
     }
 
     const embed = buildQotdEmbed(question, guild.name);
+    logger.info(`Embed object: ${JSON.stringify(embed.toJSON(), null, 2)}`);
 
     try {
-        await channel.send({
-            content: `📣 **QOTD for ${guild.name}**`,
-            embeds: [embed]
+        const sentMessage = await channel.send({
+            content: `<@&1528818863708307557> 📣 **QOTD for ${guild.name}**\n\n${question}`
         });
 
+        logger.info(`Message sent successfully with ID: ${sentMessage.id}`);
         updateSettings(guildId, "last_post", new Date().toISOString());
         logger.info(`Posted QOTD to ${guild.name} in #${channel.name}`);
         return true;
     }
     catch (error) {
         logger.error(`Failed to send QOTD to ${guild.name}: ${error.message}`);
+        logger.error(`Error details: ${JSON.stringify(error)}`);
         return false;
     }
 }
