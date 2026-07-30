@@ -17,13 +17,15 @@ async function generateQuestion() {
             "You create two short, engaging discussion prompts for a Discord community. Return them as two numbered lines in this exact format: 1. [General question] 2. [Beyblade-themed question]. Do not include any extra explanation. Generate two thoughtful questions: one general, one Beyblade-themed."
         );
 
-        const content = result.response?.text?.().trim();
-
-        if (!content) {
-            throw new Error("Gemini returned no question content.");
+        // Extract text from response
+        const text = result.response.text();
+        
+        if (!text || text.trim() === "") {
+            throw new Error("Gemini returned empty response");
         }
 
-        return content;
+        logger.info(`Gemini generated: ${text}`);
+        return text.trim();
     }
     catch (error) {
         logger.error(`Gemini question generation failed: ${error.message}`);
