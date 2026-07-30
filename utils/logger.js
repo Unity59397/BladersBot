@@ -1,30 +1,21 @@
-function timestamp(){
-
-    return new Date()
-    .toLocaleTimeString();
-
+function timestamp() {
+    return new Date().toLocaleTimeString();
 }
 
-
-function info(message){
-
-    console.log(
-        `[${timestamp()}] INFO ${message}`
-    );
-
+function info(message) {
+    console.log(`[${timestamp()}] INFO ${message}`);
 }
 
-
-function error(message){
-
-    console.error(
-        `[${timestamp()}] ERROR ${message}`
-    );
-
+function warn(message) {
+    console.warn(`[${timestamp()}] WARN ${message}`);
 }
 
+function error(message) {
+    console.error(`[${timestamp()}] ERROR ${message}`);
+}
 
 module.exports = {
     info,
+    warn,
     error
 };

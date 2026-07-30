@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "deploy": "node deploy-commands.js"
+    "deploy": "node deploy-commands.js",
+    "build": "node -e \"require('better-sqlite3')\""
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",

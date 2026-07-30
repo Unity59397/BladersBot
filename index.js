@@ -1,109 +1,28 @@
-require("dotenv").config();
+﻿require("dotenv").config();
 
-const {
-    Client,
-    GatewayIntentBits,
-    Collection
-} = require("discord.js");
-
-const fs = require("fs");
+const { Client, GatewayIntentBits } = require("discord.js");
 const logger = require("./utils/logger");
-
+const loadCommands = require("./utils/commandLoader");
+const loadEvents = require("./utils/eventLoader");
 
 const client = new Client({
-
-    intents:[
-        GatewayIntentBits.Guilds
-    ]
-
+    intents: [GatewayIntentBits.Guilds]
 });
 
+process.on("uncaughtException", (error) => {
+    logger.error(`Uncaught exception: ${error.message}`);
+});
 
+process.on("unhandledRejection", (error) => {
+    logger.error(`Unhandled rejection: ${error.message}`);
+});
 
-client.commands = new Collection();
+loadCommands(client);
+loadEvents(client);
 
-
-
-const commandFiles =
-fs.readdirSync("./commands")
-.filter(file =>
-file.endsWith(".js")
-);
-
-
-
-for(const file of commandFiles){
-
-const command =
-require(`./commands/${file}`);
-
-
-client.commands.set(
-command.data.name,
-command
-);
-
+if (!process.env.DISCORD_TOKEN) {
+    logger.error("DISCORD_TOKEN is missing. Set it in your environment or .env file.");
+    process.exit(1);
 }
 
-
-
-client.once("ready",()=>{
-
-    logger.info(
-        `Logged in as ${client.user.tag}`
-    );
-
-});
-
-
-
-client.on(
-"interactionCreate",
-async interaction=>{
-
-
-if(!interaction.isChatInputCommand())
-return;
-
-
-const command =
-client.commands.get(
-interaction.commandName
-);
-
-
-
-if(!command)
-return;
-
-
-
-try{
-
-await command.execute(interaction);
-
-}
-
-catch(error){
-
-console.error(error);
-
-await interaction.reply({
-
-content:
-"❌ Something went wrong.",
-
-ephemeral:true
-
-});
-
-}
-
-
-});
-
-
-
-client.login(
-process.env.DISCORD_TOKEN
-);
+client.login(process.env.DISCORD_TOKEN);
