@@ -112,8 +112,23 @@ async function postQotdToGuild(client, guildId) {
     logger.info(`Embed object: ${JSON.stringify(embed.toJSON(), null, 2)}`);
 
     try {
+        // Split the questions into general and beyblade
+        const lines = question.split('\n').map(line => line.trim()).filter(Boolean);
+        const generalQ = lines[0]?.replace('1. ', '') || '';
+        const beybladeQ = lines[1]?.replace('2. ', '') || '';
+
+        const formattedMessage = `<@&1528818863708307557>
+
+🌍 **General Question of the Day**
+"${generalQ}"
+💬 Share your answer!
+
+🌀 **Beyblade Question of the Day**
+"${beybladeQ}"
+💥 Let the battles begin!`;
+
         const sentMessage = await channel.send({
-            content: `<@&1528818863708307557> 📣 **QOTD for ${guild.name}**\n\n${question}`
+            content: formattedMessage
         });
 
         logger.info(`Message sent successfully with ID: ${sentMessage.id}`);
