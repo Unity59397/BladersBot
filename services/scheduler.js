@@ -56,17 +56,36 @@ async function runDailyCheck(client) {
     const currentTime = getCurrentTimeString(now);
     const todayKey = now.toISOString().slice(0, 10);
 
+    logger.info(`\n=== CRON JOB TRIGGERED ===`);
+    logger.info(`Current time: ${currentTime}, Today: ${todayKey}`);
+
     for (const guild of client.guilds.cache.values()) {
         const settings = getSettings(guild.id);
 
-        if (!settings || !settings.post_time || settings.post_time !== currentTime) {
+        logger.info(`[Guild: ${guild.name}] Checking...`);
+        logger.info(`  - Settings exist: ${!!settings}`);
+        logger.info(`  - Post time setting: "${settings?.post_time}"`);
+        logger.info(`  - Current time: "${currentTime}"`);
+        logger.info(`  - Time match: ${settings?.post_time === currentTime}`);
+        logger.info(`  - Last post: ${settings?.last_post}`);
+        logger.info(`  - Already posted today: ${settings?.last_post?.startsWith(todayKey)}`);
+
+        if (!settings || !settings.post_time) {
+            logger.warn(`  - SKIPPED: No settings or post_time`);
+            continue;
+        }
+
+        if (settings.post_time !== currentTime) {
+            logger.info(`  - SKIPPED: Time mismatch (${settings.post_time} !== ${currentTime})`);
             continue;
         }
 
         if (settings.last_post && settings.last_post.startsWith(todayKey)) {
+            logger.warn(`  - SKIPPED: Already posted today`);
             continue;
         }
 
+        logger.info(`  - POSTING QOTD...`);
         await postQotdToGuild(client, guild.id);
     }
 }
