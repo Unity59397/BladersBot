@@ -1,4 +1,3 @@
-const cron = require("node-cron");
 const { getSettings, updateSettings } = require("./database");
 const { getQuestionForGuild, buildQotdEmbed } = require("./questionService");
 const logger = require("../utils/logger");
@@ -19,35 +18,42 @@ function getCurrentTimeString(date = new Date()) {
     }).format(date);
 }
 
-function buildCronExpression(postTime) {
-    const [hour, minute] = postTime
-        .split(":")
-        .map((value) => Number(value));
-
-    if (Number.isNaN(hour) || Number.isNaN(minute)) {
-        return "0 9 * * *";
-    }
-
-    return `${minute} ${hour} * * *`;
-}
-
 function startScheduler(client) {
     if (scheduler) {
+        logger.warn("Scheduler already running, not starting again");
         return scheduler;
     }
 
     const postTime = process.env.QOTD_POST_TIME || config.defaultPostTime;
-    const cronExpression = buildCronExpression(postTime);
+    const timezone = getTimezone();
 
-    scheduler = cron.schedule(cronExpression, () => {
-        runDailyCheck(client).catch((error) => {
-            logger.error(`Scheduler failed: ${error.message}`);
-        });
-    }, {
-        timezone: getTimezone()
-    });
+    logger.info(`=== SCHEDULER STARTING ===`);
+    logger.info(`Post Time: ${postTime}`);
+    logger.info(`Timezone: ${timezone}`);
+    logger.info(`Current server time: ${new Date().toISOString()}`);
+    logger.info(`Current London time: ${getCurrentTimeString()}`);
 
-    logger.info(`QOTD scheduler started for ${postTime} in ${getTimezone()} (${cronExpression})`);
+    // Run check every 30 seconds instead of relying on cron timezone
+    scheduler = setInterval(() => {
+        const now = new Date();
+        const londonTime = getCurrentTimeString(now);
+        
+        // Only log every 10 minutes to avoid spam
+        if (now.getMinutes() % 10 === 0 && now.getSeconds() < 5) {
+            logger.info(`[Scheduler check] London time: ${londonTime}, Target: ${postTime}`);
+        }
+
+        if (londonTime === postTime) {
+            logger.info(`\n=== TIME MATCH! TRIGGERING QOTD ===`);
+            logger.info(`London time: ${londonTime}, Post time: ${postTime}`);
+            runDailyCheck(client).catch((error) => {
+                logger.error(`Scheduler failed: ${error.message}`);
+            });
+        }
+    }, 30000); // Check every 30 seconds
+
+    logger.info(`QOTD scheduler started for ${postTime} in ${timezone}`);
+    logger.info(`Using setInterval for reliable timezone handling`);
     return scheduler;
 }
 
@@ -127,9 +133,6 @@ async function postQotdToGuild(client, guildId) {
         return false;
     }
 
-    const embed = buildQotdEmbed(question, guild.name);
-    logger.info(`Embed object: ${JSON.stringify(embed.toJSON(), null, 2)}`);
-
     try {
         // Split the questions into general and beyblade
         const lines = question.split('\n').map(line => line.trim()).filter(Boolean);
@@ -150,13 +153,13 @@ async function postQotdToGuild(client, guildId) {
             content: formattedMessage
         });
 
-        logger.info(`Message sent successfully with ID: ${sentMessage.id}`);
+        logger.info(`✅ Message sent successfully with ID: ${sentMessage.id}`);
         updateSettings(guildId, "last_post", new Date().toISOString());
-        logger.info(`Posted QOTD to ${guild.name} in #${channel.name}`);
+        logger.info(`✅ Posted QOTD to ${guild.name} in #${channel.name}`);
         return true;
     }
     catch (error) {
-        logger.error(`Failed to send QOTD to ${guild.name}: ${error.message}`);
+        logger.error(`❌ Failed to send QOTD to ${guild.name}: ${error.message}`);
         logger.error(`Error details: ${JSON.stringify(error)}`);
         return false;
     }
