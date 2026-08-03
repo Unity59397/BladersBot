@@ -14,37 +14,54 @@ async function generateQuestion() {
     try {
         const model = client.getGenerativeModel({ model: "gemini-3-flash-preview" });
         
-        // Vary the prompt to get different types of questions
-        const promptVariations = [
-            "Generate two short, engaging discussion prompts for a Discord community about daily life and pop culture. Format: 1. [General question about hobbies, travel, or personal preferences] 2. [Beyblade-themed question about the anime, toys, or battles]",
-            "Create two thought-provoking questions for a Discord server. Format: 1. [General question about technology, entertainment, or relationships] 2. [Beyblade question about favorite characters, seasons, or Beyblades]",
-            "Write two fun conversation starters for a Discord community. Format: 1. [General question about food, music, games, or interesting experiences] 2. [Beyblade question about competitive strategy, legendary moments, or personal favorites]",
-            "Generate two engaging questions to spark discussion. Format: 1. [General question about dreams, goals, or hypothetical scenarios] 2. [Beyblade question about lore, evolution of the series, or dream tournaments]",
-            "Create two ice-breaker questions for Discord. Format: 1. [General question about hobbies, skills, or creative pursuits] 2. [Beyblade question about why you love the series, favorite bladers, or ultimate battles]"
+        const systemPrompt = `You are a Discord question generator. Generate EXACTLY two questions separated by a newline. Do NOT include any preamble, explanation, or extra text. Only output the questions in this format:
+1. [General question]
+2. [Beyblade question]`;
+
+        const userPrompts = [
+            "Generate two questions about hobbies and Beyblade toys.",
+            "Generate two questions about travel and Beyblade characters.",
+            "Generate two questions about food and Beyblade battles.",
+            "Generate two questions about technology and Beyblade strategy.",
+            "Generate two questions about music and Beyblade favorites.",
+            "Generate two questions about games and Beyblade lore.",
+            "Generate two questions about dreams and Beyblade tournaments.",
+            "Generate two questions about relationships and Beyblade Bladers."
         ];
         
-        // Pick a random prompt variation
-        const randomPrompt = promptVariations[Math.floor(Math.random() * promptVariations.length)];
+        const randomPrompt = userPrompts[Math.floor(Math.random() * userPrompts.length)];
         
-        logger.info(`Calling Gemini API with prompt variation...`);
+        logger.info(`Calling Gemini API with prompt: "${randomPrompt}"`);
         
-        const result = await model.generateContent(randomPrompt);
+        const result = await model.generateContent([
+            { text: systemPrompt },
+            { text: randomPrompt }
+        ]);
 
-        // Extract text from response
-        const text = result.response.text();
-        logger.info(`Extracted text: "${text}"`);
+        const text = result.response.text().trim();
+        logger.info(`Raw Gemini response: "${text}"`);
         
-        if (!text || text.trim() === "") {
-            logger.warn("Gemini returned empty text");
+        if (!text || text.length === 0) {
+            logger.warn("Gemini returned empty response");
             return null;
         }
 
-        logger.info(`Gemini generated: ${text}`);
-        return text.trim();
+        // Clean up the response - remove any preamble
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
+        const cleanedText = lines
+            .filter(line => line.match(/^[1-2]\./)) // Only keep lines starting with "1." or "2."
+            .join('\n');
+
+        if (!cleanedText) {
+            logger.error(`Could not extract questions from: ${text}`);
+            return null;
+        }
+
+        logger.info(`Cleaned questions: ${cleanedText}`);
+        return cleanedText;
     }
     catch (error) {
         logger.error(`Gemini question generation failed: ${error.message}`);
-        logger.error(`Full error: ${JSON.stringify(error)}`);
         return null;
     }
 }
